@@ -5,48 +5,20 @@ class Token
 public:
   char kind;
   double value;   // only relevant if kind is '8'
+  string name;    // for variables
   Token() { }
   Token (char ch): kind(ch) { }
   Token (char ch, double val): kind(ch), value(val) { }
+  Token (char ch, string n): kind(ch), name(n) { }
 };
-
-//-------------------------------------------------------
-
-class Variable
-{
-public:
-  string name;
-  double value;
-};
-
-vector<Variable> var_table;
-
-double get_value(string s)
-{
-  for(const Variable &v : var_table)
-    if(v.name == s)
-      return v.value;
-  error("get_value: undefined variable.");
-}
-
-void set_value(string s, double d)  // sets existing variable
-{
-  for(Variable &v : var_table)
-    if(v.name == s) {
-      v.value = d;
-      return;
-    }
-  error("set_value: undefined variable.");
-}
-
-
-
-
 
 //-------------------------------------------------------
 
 const char QUIT = 'q';
 const char PRINT = ';';
+const char LET = 'L';     // denotes let token
+const char NAME = 'a';    // denotes a variable
+const string DECLKEY = "let";
 
 class Token_stream
 {
@@ -91,7 +63,7 @@ Token Token_stream::get()
   {
     case PRINT: case QUIT:
     case '+': case '-': case '*': case '/': case '!':
-    case '(': case ')': case '{': case '}':
+    case '(': case ')': case '{': case '}': case '=':
       return Token{ch}; 
     case '.':
     case '0': case '1': case '2': case '3': case '4': 
@@ -103,7 +75,24 @@ Token Token_stream::get()
       return Token{'8', d}; 
     }
     default:
-      error("Bad token, can't recognize"); 
+    {
+      string s;
+      if(isalpha(ch))
+      {
+        s += ch;
+        while(cin.get(ch) && (isalpha(ch) || isdigit(ch)))
+          s += ch;
+        cin.putback(ch);
+        if(s == DECLKEY)
+          return Token{LET};
+        else
+        {
+          cout << "Found token " << s << endl;
+          return Token{NAME,s};
+        }
+      }
+      error("Token_stream::get: bad token.");
+    }
   }
 
   cerr << "Should never reach here";
@@ -124,19 +113,72 @@ void Token_stream::ignore(char c)
       return;
 }
 
+//-------------------------------------------------------
+
+class Variable
+{
+public:
+  string name;
+  double value;
+  Variable(string var, double val): name(var), value(val) {}
+};
+
+vector<Variable> var_table;
+
+double get_value(string s)
+{
+  for(const Variable &v : var_table)
+    if(v.name == s)
+      return v.value;
+  error("get_value: undefined variable.");
+
+  // should never get here
+  return 0;
+}
+
+void set_value(string s, double d)  // sets existing variable
+{
+  for(Variable &v : var_table)
+    if(v.name == s) {
+      v.value = d;
+      return;
+    }
+  error("set_value: undefined variable.");
+}
+
+bool is_declared(string var)
+{
+  for (Variable &v : var_table)
+    if(v.name == var)
+      return true;
+  return false;
+}
+
+double define_name(string var, double val)
+{
+  if(is_declared(var))
+    error("define_name: variable already declared.");
+  var_table.push_back(Variable(var,val));
+  return val;
+}
+
+
+
+
 //---------------------------------------------------------
 
 double term();
 double primary();
 double factTerm();
 double expression();
+double declaration();
 
 double statement()
 {
   Token t = ts.get();
   switch (t.kind)
   {
-    case let:     // how to get a token that is more than 1 characters long
+    case LET:     // how to get a token that is more than 1 characters long
       return declaration();
     default:
       ts.putback(t);
@@ -144,6 +186,18 @@ double statement()
   }
 }
 
+double declaration()
+{
+  Token t = ts.get();
+  if(t.kind != NAME)
+    error("declaration: expecting variable name.");
+  string var = t.name;    // TODO: add name field in token
+  t = ts.get();
+  if(t.kind != '=')
+    error("declaration: expecting = symbol");
+  double d = expression();
+  return define_name(var, d);
+}
 
 double expression()
 {
@@ -248,9 +302,11 @@ double primary()
       return primary();
     case '8':
       return t.value;
+    case NAME:
+      return get_value(t.name);
 
     default:
-      error("Primary expected, but found something else");
+      error("primary: Primary expected, but found something else");
   }
 
   // can never reach here
