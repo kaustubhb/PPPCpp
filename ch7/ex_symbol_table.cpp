@@ -19,7 +19,9 @@ const char QUIT = 'q';
 const char PRINT = ';';
 const char LET = 'L';     // denotes let token
 const char NAME = 'a';    // denotes a variable
-const string DECLKEY = "let";
+const char CONST = 'C';   // denotes a constant variable
+const string DECLVAR = "let";
+const string DECLCONST = "const";
 
 class Token_stream
 {
@@ -77,13 +79,14 @@ Token Token_stream::get()
         while(cin.get(ch) && (isalpha(ch) || isdigit(ch) || ch == '_'))
           s += ch;
         cin.putback(ch);
-        if(s == DECLKEY)
+
+        if(s == DECLVAR)
           return Token{LET};
-        else
-        {
-          //cout << "Found token " << s << endl;
-          return Token{NAME,s};
-        }
+        if(s == DECLCONST)
+          return Token{CONST};
+
+        //cout << "Found token " << s << endl;
+        return Token{NAME,s};
       }
       error("Token_stream::get: bad token.");
     }
@@ -115,12 +118,24 @@ class Variable
 public:
   string name;
   double value;
-  Variable(string var, double val): name(var), value(val) {}
+  bool isConst;
+  Variable(string var, double val): name(var), value(val), isConst(false) {}
+  Variable(string var, double val, bool constant): name(var), value(val), isConst(constant) {}
 };
 
-vector<Variable> var_table;
+class SymbolTable
+{
+public:
+  double get_value(string s);
+  void set_value(string s, double d);
+  bool is_declared(string var);
+  double define_name(string var, double val, bool isConst);
 
-double get_value(string s)
+private:
+  vector<Variable> var_table;
+} sym_tbl;
+
+double SymbolTable::get_value(string s)
 {
   for(const Variable &v : var_table)
     if(v.name == s)
@@ -131,17 +146,20 @@ double get_value(string s)
   return 0;
 }
 
-void set_value(string s, double d)  // sets existing variable
+void SymbolTable::set_value(string s, double d)  // sets existing variable
 {
   for(Variable &v : var_table)
     if(v.name == s) {
-      v.value = d;
-      return;
+      if(v.isConst == false) {
+        v.value = d;
+        return;
+      }
+      error("set_value: trying to set a constant variable");
     }
   error("set_value: undefined variable.");
 }
 
-bool is_declared(string var)
+bool SymbolTable::is_declared(string var)
 {
   for (Variable &v : var_table)
     if(v.name == var)
@@ -149,11 +167,11 @@ bool is_declared(string var)
   return false;
 }
 
-double define_name(string var, double val)
+double SymbolTable::define_name(string var, double val, bool isConst)
 {
   if(is_declared(var))
     error("define_name: variable already declared.");
-  var_table.push_back(Variable(var,val));
+  var_table.push_back(Variable(var,val, isConst));
   return val;
 }
 
@@ -171,6 +189,8 @@ double statement()
   switch (t.kind)
   {
     case LET:     // how to get a token that is more than 1 characters long
+    case CONST:
+      ts.putback(t);
       return declaration();
     case NAME:
     {
@@ -178,8 +198,8 @@ double statement()
       if(u.kind == '=')     // handling assignment here.
       {
         double d = expression();
-        set_value(t.name, d);
-        return get_value(t.name);
+        sym_tbl.set_value(t.name, d);
+        return sym_tbl.get_value(t.name);
       }
       ts.putback(u);
       ts.putback(t);
@@ -194,6 +214,10 @@ double statement()
 double declaration()
 {
   Token t = ts.get();
+  bool isConst = t.kind == CONST;
+
+  t = ts.get();
+
   if(t.kind != NAME)
     error("declaration: expecting variable name.");
   string var = t.name;    // TODO: add name field in token
@@ -201,7 +225,7 @@ double declaration()
   if(t.kind != '=')
     error("declaration: expecting = symbol");
   double d = expression();
-  return define_name(var, d);
+  return sym_tbl.define_name(var, d, isConst);
 }
 
 double expression()
@@ -337,7 +361,7 @@ double primary()
       }
       else {
         ts.putback(f);
-        return get_value(t.name);
+        return sym_tbl.get_value(t.name);
       }
     }
 
@@ -399,7 +423,7 @@ int main()
 {
   try
   {
-    define_name("k", 1000);
+    sym_tbl.define_name("pi", 3.14159, true);
     calculateLoop();
     return 0;
   }

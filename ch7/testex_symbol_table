@@ -2,7 +2,7 @@
 let x=10;
 {x-1*4*(2-1)};
 x-20;
-k;
+pi;
 -x;
 sqrt(-k);
 sqrt(x);
@@ -14,4 +14,7 @@ let x=30;
 x;
 let y_1 = 100;
 x+y_1;
+const hours_per_day = 24;
+hours_per_day = 23;
+const minutes_per_day = hours_per_day * 60;
 q
