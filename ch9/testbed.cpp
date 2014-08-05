@@ -2,12 +2,15 @@
 
 class X
 {
-  int x;
 public:
+  int x;
+
   X(int i)
   {
     cout << x << endl;
   }
+
+  X() {}
 };
 
 int main()
@@ -15,5 +18,6 @@ int main()
   // int x = {1};
   // cout << x << endl;
 
-  X(10);
+  X obj(10);
+  cout << obj.x << endl;
 }
