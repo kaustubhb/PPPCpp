@@ -2,11 +2,14 @@ namespace chrono {
   enum class Month {
     jan=1, feb, mar, apr, may, jun, jul, aug, sep, oct, nov, dec
   };
+  enum class Day {
+    sunday, monday, tuesday, wednesday, thursday, friday, saturday
+  };
 
   class Date {
   public:
     class Invalid {};   // to throw as exception
-    Date (int y, Month m, ind d);
+    Date (int y, Month m, int d);
     Date();
 
     // default copy operations are fine
@@ -21,15 +24,15 @@ namespace chrono {
     void add_year (int n);
 
   private:
-    int d;
-    Month m;
     int y;
+    Month m;
+    int d;
   };
 
-  bool isDate (int y, Month m, int y);
+  bool isDate (int y, Month m, int d);
   bool leapYear (int y);
   bool operator==(const Date &d1, const Date &d2);
   bool operator!=(const Date &d1, const Date &d2);
   ostream& operator<<(ostream &os, const Date &d);
-  istream& operator>>(istream &os, Date &d);
+  istream& operator>>(istream &is, Date &d);
 }   // chrono

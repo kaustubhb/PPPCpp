@@ -1,40 +1,3 @@
-namespace chrono {
-  enum class Month {
-    jan=1, feb, mar, apr, may, jun, jul, aug, sep, oct, nov, dec
-  };
-
-  class Date {
-  public:
-    class Invalid {};   // to throw as exception
-    Date (int y, Month m, ind d);
-    Date();
-
-    // default copy operations are fine
-    // non-modifying operations
-    int day() const { return d; }
-    Month month() const { return m; }
-    int year() const { return y; }
-
-    // modifying operations
-    void add_day (int n);
-    void add_month (int n);
-    void add_year (int n);
-
-  private:
-    int d;
-    Month m;
-    int y;
-  };
-
-  bool isDate (int y, Month m, int y);
-  bool leapYear (int y);
-  bool operator==(const Date &d1, const Date &d2);
-  bool operator!=(const Date &d1, const Date &d2);
-  ostream& operator<<(ostream &os, const Date &d);
-  istream& operator>>(istream &os, Date &d);
-}   // chrono
-
-
 #include "std_lib_facilities.h"
 #include "Chrono.h"
 
@@ -73,7 +36,79 @@ namespace chrono {
     y += n;
   }
 
+  // helper functions
+  bool isDate(int y, Month m, int d) {
+    if(y < 1) return false;
+    if(m < Month::jan || m > Month::dec)
+      return false;
+    if(d < 1 || d > 31)
+      return false;
 
+    switch(m)
+    {
+      case Month::feb:
+        if(d > 29 && leapYear(y))
+          return false;
+        if(d > 28)
+          return false;
+
+      case Month::apr: case Month::jun: 
+      case Month::sep: case Month::nov:
+        if(d > 30)
+          return false;
+      default:
+        return true;
+    }  
+  }
+
+  bool leapYear (int y)
+  {
+    return y%400 == 0 || (y%4 == 0 && y%100 != 0);
+  }
+  bool operator==(const Date &d1, const Date &d2)
+  {
+    return (d1.year() == d2.year() &&
+            d1.month() == d2.month() &&
+            d1.day() == d2.day());
+  }
+
+  bool operator!=(const Date &d1, const Date &d2)
+  {
+    return !(d1 == d2);
+  }
+
+  ostream& operator<<(ostream &os, const Date &d)
+  {
+    return os << '(' << d.year() << ',' << int(d.month())
+              << ',' << d.day() <<')';
+  }
+
+  istream& operator>>(istream &is, Date &dd)
+  {
+    int y,m,d;
+    char c1,c2,c3,c4;
+    is >> c1 >> y >> c2 >> m >> c3 >> d >> c4;
+    if (!is)
+      return is;
+    if(c1 != '(' || c2 != ',' || c3 != ',' || c4 != ')') {
+      is.clear(ios_base::failbit);
+      return is;
+    }
+    dd = Date{y,Month(m),d};
+    return is;
+  }
+
+  Day dayOfWeek(const Date& d) {
+    throw;
+  }
+
+  Date nextSunday(const Date& d) {
+    throw;
+  }
+
+  Date nextWeekday(const Date& d) {
+    throw;
+  }
 }
 
 
