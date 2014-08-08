@@ -36,3 +36,5 @@ namespace chrono {
   ostream& operator<<(ostream &os, const Date &d);
   istream& operator>>(istream &is, Date &d);
 }   // chrono
+
+//ostream& operator<<(ostream &os, const chrono::Date &d);
