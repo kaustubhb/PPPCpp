@@ -33,6 +33,8 @@ void readInt(int a, int b, istream &cin)
 			char c;
 			while(cin >> c && !isdigit(c))
 				;
+			if(!cin)
+				error("No input");
 			cin.unget();	// returns the last read character back to stream
 		}
 	}
