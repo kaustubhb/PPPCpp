@@ -1,2 +1,2 @@
-CPPFLAGS=-Wall -Werror -std=c++11 -g
+CPPFLAGS=-Wall -std=c++11 -g
 
